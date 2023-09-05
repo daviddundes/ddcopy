@@ -684,6 +684,27 @@ return (function () {
                     return [findThisElement(elt, attrName)];
                 } else {
                     var result = querySelectorAllExt(elt, attrTarget);
+                    // find `inherit` in string, make sure it's surrounded by commas or is at the start/end of string
+                    var shouldInherit = new RegExp(/(^|,)(\s*)inherit(\s*)($|,)/).test(attrTarget)
+                    if (shouldInherit) {
+                        var eltToInheritFrom = getClosestMatch(elt, function (parent) {
+                            return parent !== elt && parent.hasAttribute(attrName)
+                        })
+                        if (eltToInheritFrom) {
+                            var targetsToInherit = findAttributeTargets(eltToInheritFrom, attrName)
+                            if (targetsToInherit) {
+                                // Can't push to a NodeList (returned by document.querySelectorAll), and Array.from is IE11 incompatible
+                                var newResult = [], i
+                                for (i = 0; i < result.length; i++) {
+                                    newResult.push(result[i])
+                                }
+                                for (i = 0; i < targetsToInherit.length; i++) {
+                                    newResult.push(targetsToInherit[i])
+                                }
+                                result = newResult
+                            }
+                        }
+                    }
                     if (result.length === 0) {
                         logError('The selector "' + attrTarget + '" on ' + attrName + " returned no matches!");
                         return [DUMMY_ELT]
